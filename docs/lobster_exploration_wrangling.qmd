@@ -1,0 +1,75 @@
+---
+title: "data_wrangling_lobsters"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(here)
+```
+
+
+```{r}
+lobsters <- read_csv(here("data","Lobster_Abundance_All_Years_20210412.csv"), na = c("-99999", "")) %>% 
+  clean_names() %>% 
+  uncount(count)
+```
+
+```{r}
+# Create a summary table that finds the total counts (see: n()), and mean carapace lengths of lobsters observed in the dataset by site and year.
+
+lobster_total <- lobsters %>% 
+  group_by(site, year)%>% 
+  summarize(size_mm = mean(size_mm),
+            total = n())
+
+# Create a ggplot graph of the number of total lobsters observed (y-axis) by year (x-axis) in the study, grouped (either aesthetically or by faceting) by site
+
+ggplot(data = lobster_total,
+       aes(x = year,
+           y = total,
+           group = site)) +
+  geom_line(aes(color = site))
+```
+
+```{r}
+# Create a subset that only contains lobster data from 2020 (note: this should be from the original data you read in, not the summary table you created above)
+
+lobsters_2020 <- lobsters %>% 
+  filter(year == 2020)
+
+# Write code (you can decide how to do this - there are a number of ways) to find the counts of lobsters observed at each site (only using site as the grouping factor) that are above and below the legal limit. Hint: You may want to add a new column legal that contains “yes” or “no” based on the size of the observed lobster (see dplyr::case_when() for a really nice way to do this), then use group_by() %>% summarize(n()) or dplyr::count() to get counts by group within variables
+
+lobsters_legal <- lobsters_2020 %>% 
+  mutate(legal = ifelse(size_mm >= 79.76, "yes", "no")) %>% 
+  group_by(site, legal) %>% 
+  summarize(count = n())
+
+# Create a stacked column graph that shows the proportion of legal and non-legal lobsters at each site. **Hint: create a stacked column graph with geom_col(), then add the argument position = "fill" to convert from a graph of absolute counts to proportions.
+
+ggplot(data = lobsters_legal,
+       aes(x = site,
+           y = count)) +
+  geom_col(aes(fill = legal)) +
+  scale_fill_manual(values = c("darkred", "forestgreen")) +
+  theme_light() +
+  labs(x = "Site",
+       y = "Count")
+  
+
+```
+
+`group_by` practice
+```{r}
+group_by_site <- lobsters %>% 
+  group_by(site) %>% 
+  summarize(mean = mean(size_mm, na.rm = TRUE),
+            sd = sd(size_mm, na.rm = TRUE))
+
+group_by_lobsters <- lobsters %>% 
+  group_by(site, month) %>% 
+  summarize(max_size = max(size_mm, na.rm = TRUE))
+```
+
